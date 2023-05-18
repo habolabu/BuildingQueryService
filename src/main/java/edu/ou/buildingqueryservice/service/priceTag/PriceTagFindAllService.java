@@ -66,7 +66,7 @@ public class PriceTagFindAllService extends BaseService<IBaseRequest, IBaseRespo
                 new SuccessPojo<>(
                         Map.of(
                                 "data", priceTagDocuments,
-                                "totalPage", pageAmount
+                                "totalPage",  PaginationUtils.getPageAmount(pageAmount)
                         ),
                         CodeStatus.SUCCESS,
                         Message.Success.SUCCESSFUL

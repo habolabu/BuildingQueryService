@@ -66,7 +66,7 @@ public class RoomFindAllService extends BaseService<IBaseRequest, IBaseResponse>
                 new SuccessPojo<>(
                         Map.of(
                                 "data", roomDocuments,
-                                "totalPage", pageAmount
+                                "totalPage", PaginationUtils.getPageAmount(pageAmount)
                         ),
                         CodeStatus.SUCCESS,
                         Message.Success.SUCCESSFUL
