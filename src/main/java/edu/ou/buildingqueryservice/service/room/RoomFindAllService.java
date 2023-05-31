@@ -1,6 +1,7 @@
 package edu.ou.buildingqueryservice.service.room;
 
 import edu.ou.buildingqueryservice.common.constant.CodeStatus;
+import edu.ou.buildingqueryservice.data.entity.OwnerHistoryDocument;
 import edu.ou.buildingqueryservice.data.entity.RoomDocument;
 import edu.ou.buildingqueryservice.data.pojo.request.room.RoomFindAllRequest;
 import edu.ou.coreservice.common.constant.Message;
@@ -11,9 +12,11 @@ import edu.ou.coreservice.data.pojo.request.base.IBaseRequest;
 import edu.ou.coreservice.data.pojo.response.base.IBaseResponse;
 import edu.ou.coreservice.data.pojo.response.impl.SuccessPojo;
 import edu.ou.coreservice.data.pojo.response.impl.SuccessResponse;
+import edu.ou.coreservice.queue.human.external.user.UserFindDetailByIdQueueE;
 import edu.ou.coreservice.repository.base.IBaseRepository;
 import edu.ou.coreservice.service.base.BaseService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Service;
@@ -27,6 +30,8 @@ import java.util.Objects;
 public class RoomFindAllService extends BaseService<IBaseRequest, IBaseResponse> {
     private final IBaseRepository<Query, List<RoomDocument>> roomFindAllRepository;
     private final IBaseRepository<Query, Integer> roomGetPageAmountRepository;
+    private final IBaseRepository<Integer, OwnerHistoryDocument> ownerHistoryFindByRoomIdRepository;
+    private final RabbitTemplate rabbitTemplate;
     private final ValidValidation validValidation;
 
     /**
@@ -60,7 +65,19 @@ public class RoomFindAllService extends BaseService<IBaseRequest, IBaseResponse>
         final Query query = this.filter(roomFindAllWithParamsRequest);
 
         final List<RoomDocument> roomDocuments = roomFindAllRepository.execute(query);
+
         final int pageAmount = roomGetPageAmountRepository.execute(query.skip(0).limit(0));
+        roomDocuments.forEach(roomDocument -> {
+            final OwnerHistoryDocument ownerHistory = ownerHistoryFindByRoomIdRepository.execute(roomDocument.getOId());
+            final Object owner = rabbitTemplate.convertSendAndReceive(
+                    UserFindDetailByIdQueueE.EXCHANGE,
+                    UserFindDetailByIdQueueE.ROUTING_KEY,
+                    ownerHistory.getOwnerId());
+
+            ownerHistory.setOwnerInfo((Map<String, Object>) owner);
+
+            roomDocument.setOwner(ownerHistory);
+        });
 
         return new SuccessResponse<>(
                 new SuccessPojo<>(

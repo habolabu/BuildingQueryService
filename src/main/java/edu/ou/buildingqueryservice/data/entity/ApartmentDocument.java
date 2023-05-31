@@ -21,4 +21,6 @@ public class ApartmentDocument implements Serializable {
     private int floorAmount;
     @JsonIgnore
     private int areaId;
+    private int fullRoomAmount;
+    private int totalRoom;
 }

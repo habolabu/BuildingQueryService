@@ -3,6 +3,8 @@ package edu.ou.buildingqueryservice.service.apartment;
 
 import edu.ou.buildingqueryservice.common.constant.CodeStatus;
 import edu.ou.buildingqueryservice.data.entity.ApartmentDocument;
+import edu.ou.buildingqueryservice.data.entity.OwnerHistoryDocument;
+import edu.ou.buildingqueryservice.data.entity.RoomDocument;
 import edu.ou.buildingqueryservice.data.pojo.request.apartment.ApartmentFindAllWithParamsRequest;
 import edu.ou.coreservice.common.constant.Message;
 import edu.ou.coreservice.common.exception.BusinessException;
@@ -28,6 +30,8 @@ import java.util.Objects;
 public class ApartmentFindAllService extends BaseService<IBaseRequest, IBaseResponse> {
     private final IBaseRepository<Query, List<ApartmentDocument>> apartmentFindAllRepository;
     private final IBaseRepository<Query, Integer> apartmentGetPageAmountRepository;
+    private final IBaseRepository<Integer, List<RoomDocument>> roomFindByApartmentIdRepository;
+    private final IBaseRepository<List<Integer>, List<OwnerHistoryDocument>> ownerHistoryFindByRoomIdsRepository;
     private final ValidValidation validValidation;
 
     /**
@@ -63,6 +67,17 @@ public class ApartmentFindAllService extends BaseService<IBaseRequest, IBaseResp
 
         final List<ApartmentDocument> apartmentDocuments = apartmentFindAllRepository.execute(query);
         final int pageAmount = apartmentGetPageAmountRepository.execute(query.skip(0).limit(0));
+
+        apartmentDocuments.forEach(apartmentDocument -> {
+            final List<Integer> roomIds = roomFindByApartmentIdRepository
+                    .execute(apartmentDocument.getOId())
+                    .stream()
+                    .map(RoomDocument::getOId)
+                    .toList();
+            final List<OwnerHistoryDocument> ownerHistoryDocuments = ownerHistoryFindByRoomIdsRepository.execute(roomIds);
+            apartmentDocument.setTotalRoom(roomIds.size());
+            apartmentDocument.setFullRoomAmount(ownerHistoryDocuments.size());
+        });
 
         return new SuccessResponse<>(
                 new SuccessPojo<>(

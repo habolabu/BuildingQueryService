@@ -2,6 +2,8 @@ package edu.ou.buildingqueryservice.service.apartment;
 
 import edu.ou.buildingqueryservice.common.constant.CodeStatus;
 import edu.ou.buildingqueryservice.data.entity.ApartmentDocument;
+import edu.ou.buildingqueryservice.data.entity.OwnerHistoryDocument;
+import edu.ou.buildingqueryservice.data.entity.RoomDocument;
 import edu.ou.buildingqueryservice.data.pojo.request.apartment.ApartmentFindDetailRequest;
 import edu.ou.coreservice.common.constant.Message;
 import edu.ou.coreservice.common.exception.BusinessException;
@@ -15,12 +17,15 @@ import edu.ou.coreservice.service.base.BaseService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
 import java.util.Objects;
 
 @Service
 @RequiredArgsConstructor
 public class ApartmentFindDetailService extends BaseService<IBaseRequest, IBaseResponse> {
     private final IBaseRepository<String, ApartmentDocument> apartmentFindBySlugRepository;
+    private final IBaseRepository<Integer, List<RoomDocument>> roomFindByApartmentIdRepository;
+    private final IBaseRepository<List<Integer>, List<OwnerHistoryDocument>> ownerHistoryFindByRoomIdsRepository;
     private final ValidValidation validValidation;
 
     /**
@@ -63,6 +68,16 @@ public class ApartmentFindDetailService extends BaseService<IBaseRequest, IBaseR
                     apartmentFindDetailRequest.getSlug()
             );
         }
+
+        final List<Integer> roomIds = roomFindByApartmentIdRepository
+                .execute(apartmentDocument.getOId())
+                .stream()
+                .map(RoomDocument::getOId)
+                .toList();
+
+        final List<OwnerHistoryDocument> ownerHistoryDocuments = ownerHistoryFindByRoomIdsRepository.execute(roomIds);
+        apartmentDocument.setTotalRoom(roomIds.size());
+        apartmentDocument.setFullRoomAmount(ownerHistoryDocuments.size());
 
         return new SuccessResponse<>(
                 new SuccessPojo<>(
