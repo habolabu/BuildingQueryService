@@ -69,9 +69,12 @@ public class RoomFindAllService extends BaseService<IBaseRequest, IBaseResponse>
         final int pageAmount = roomGetPageAmountRepository.execute(query.skip(0).limit(0));
         roomDocuments.forEach(roomDocument -> {
             final OwnerHistoryDocument ownerHistory = ownerHistoryFindByRoomIdRepository.execute(roomDocument.getOId());
+
             if(Objects.isNull(ownerHistory)){
                 roomDocument.setOwner(null);
+                return;
             }
+
             final Object owner = rabbitTemplate.convertSendAndReceive(
                     UserFindDetailByIdQueueE.EXCHANGE,
                     UserFindDetailByIdQueueE.ROUTING_KEY,
