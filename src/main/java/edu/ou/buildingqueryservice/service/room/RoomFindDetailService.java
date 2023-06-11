@@ -71,15 +71,16 @@ public class RoomFindDetailService extends BaseService<IBaseRequest, IBaseRespon
             );
         }
         final OwnerHistoryDocument ownerHistory = ownerHistoryFindByRoomIdRepository.execute(roomDocument.getOId());
-        final Object owner = rabbitTemplate.convertSendAndReceive(
-                UserFindDetailByIdQueueE.EXCHANGE,
-                UserFindDetailByIdQueueE.ROUTING_KEY,
-                ownerHistory.getOwnerId());
+        if (Objects.nonNull(ownerHistory)) {
+            final Object owner = rabbitTemplate.convertSendAndReceive(
+                    UserFindDetailByIdQueueE.EXCHANGE,
+                    UserFindDetailByIdQueueE.ROUTING_KEY,
+                    ownerHistory.getOwnerId());
 
-        ownerHistory.setOwnerInfo((Map<String, Object>) owner);
+            ownerHistory.setOwnerInfo((Map<String, Object>) owner);
 
-        roomDocument.setOwner(ownerHistory);
-
+            roomDocument.setOwner(ownerHistory);
+        }
         final PriceTagDocument priceTag = priceTagFindByIdRepository.execute(roomDocument.getPriceTagId());
         roomDocument.setPrice(priceTag);
 
