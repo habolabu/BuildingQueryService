@@ -9,6 +9,7 @@ import edu.ou.buildingqueryservice.data.pojo.request.apartment.ApartmentFindAllW
 import edu.ou.coreservice.common.constant.Message;
 import edu.ou.coreservice.common.exception.BusinessException;
 import edu.ou.coreservice.common.util.PaginationUtils;
+import edu.ou.coreservice.common.util.SlugUtils;
 import edu.ou.coreservice.common.validate.ValidValidation;
 import edu.ou.coreservice.data.pojo.request.base.IBaseRequest;
 import edu.ou.coreservice.data.pojo.response.base.IBaseResponse;
@@ -106,9 +107,9 @@ public class ApartmentFindAllService extends BaseService<IBaseRequest, IBaseResp
 
         if (Objects.nonNull(request.getName())) {
             query.addCriteria(
-                    Criteria.where("name")
+                    Criteria.where("slug")
                             .regex(
-                                    request.getName(),
+                                    SlugUtils.createSlug(request.getName()),
                                     "i"
                             )
             );
